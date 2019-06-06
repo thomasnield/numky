@@ -77,7 +77,27 @@ fun Matrix<Double>.sumByColumn() = MatrixContext.real.produce(1, colNum) { i, j 
     }
 }
 
+fun Matrix<Double>.minByColumn() = MatrixContext.real.produce(1, colNum) { i, j ->
+    val column = columns[j]
+    column.asSequence().min()?:throw Exception("Cannot produce min on empty column")
+}
+
+fun Matrix<Double>.maxByColumn() = MatrixContext.real.produce(1, colNum) { i, j ->
+    val column = columns[j]
+    column.asSequence().max()?:throw Exception("Cannot produce min on empty column")
+}
+
+fun Matrix<Double>.averageByColumn() = MatrixContext.real.produce(1, colNum) { i, j ->
+    val column = columns[j]
+    column.asSequence().average()
+}
+
 fun Matrix<Double>.sum() = this.elements().map { (dim,value) -> value  }.sum()
 fun Matrix<Double>.min() = this.elements().map { (dim,value) -> value  }.min()
 fun Matrix<Double>.max() = this.elements().map { (dim,value) -> value  }.max()
 fun Matrix<Double>.average() = this.elements().map { (dim,value) -> value  }.average()
+
+
+fun Matrix<Double>.pow(n: Int) = MatrixContext.real.produce(rowNum, colNum) { i, j ->
+    this@pow[i,j].pow(n)
+}
