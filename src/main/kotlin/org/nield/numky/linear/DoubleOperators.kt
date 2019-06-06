@@ -1,6 +1,8 @@
 package org.nield.numky.linear
 
 import scientifik.kmath.linear.MatrixContext
+import scientifik.kmath.linear.RealMatrixContext.elementContext
+import scientifik.kmath.operations.sum
 import scientifik.kmath.structures.Matrix
 import scientifik.kmath.structures.asSequence
 import kotlin.math.pow
@@ -68,15 +70,12 @@ fun Matrix<Double>.extractColumns(columnRange: IntRange) = MatrixContext.real.pr
 }
 
 
-fun Matrix<Double>.sumByColumn() = this.columns.iterator()
-        .asSequence()
-        .map { it.asSequence().sum() }
-        .toList()
-        .let { buffer ->
-            MatrixContext.real.produce(1,buffer.count()) {row,col ->
-                buffer[col]
-            }
-        }
+fun Matrix<Double>.sumByColumn() = MatrixContext.real.produce(1, colNum) { i, j ->
+    val column = columns[j]
+    with(elementContext) {
+        sum(column.asSequence())
+    }
+}
 
 fun Matrix<Double>.sum() = this.elements().map { (dim,value) -> value  }.sum()
 fun Matrix<Double>.min() = this.elements().map { (dim,value) -> value  }.min()
