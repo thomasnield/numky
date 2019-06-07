@@ -4,6 +4,7 @@ import scientifik.kmath.linear.MatrixContext
 import scientifik.kmath.linear.RealMatrixContext.elementContext
 import scientifik.kmath.linear.VirtualMatrix
 import scientifik.kmath.operations.sum
+import scientifik.kmath.structures.Buffer
 import scientifik.kmath.structures.Matrix
 import scientifik.kmath.structures.asSequence
 import kotlin.math.pow
@@ -56,15 +57,23 @@ operator fun Matrix<Double>.times(other: Matrix<Double>) = MatrixContext.real.pr
     this@times[row,col] * other[row,col]
 }
 
+operator fun Matrix<Double>.minus(other: Matrix<Double>) = MatrixContext.real.produce(rowNum, colNum) { row, col ->
+    this@minus[row,col] - other[row,col]
+}
+
 operator fun Matrix<Double>.plus(other: Matrix<Double>) = MatrixContext.real.add(this,other)
 
 fun Matrix<Double>.repeatStackVertical(n: Int) = VirtualMatrix(rowNum*n, colNum) { row, col ->
     this@repeatStackVertical[if (row == 0) 0 else row % this@repeatStackVertical.rowNum, col]
 }
 
-operator fun Matrix<Double>.minus(other: Matrix<Double>) = MatrixContext.real.produce(rowNum, colNum) { row, col ->
-    this@minus[row,col] - other[row,col]
-}
+inline fun Matrix<Double>.appendColumn(crossinline  mapper: (Buffer<Double>) -> Double) =
+        MatrixContext.real.produce(rowNum,colNum+1) { row,col ->
+            if (col < colNum)
+                this[row,col]
+            else
+                mapper(rows[row])
+        }
 
 fun Matrix<Double>.extractColumn(columnIndex: Int) = extractColumns(columnIndex..columnIndex)
 
