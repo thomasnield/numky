@@ -4,7 +4,6 @@ import org.nield.numky.linear.*
 import org.ojalgo.random.Normal
 import scientifik.kmath.linear.dot
 import scientifik.kmath.structures.Matrix
-import scientifik.kmath.structures.asSequence
 import java.net.URL
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.exp
@@ -13,12 +12,12 @@ import kotlin.math.exp
 fun main() {
 
     val inputData = URL("https://tinyurl.com/y2qmhfsr")
-            .readText().split(Regex("\\r?\\n"))
-            .asSequence()
-            .drop(1)
-            .filter { it.isNotEmpty() }
-            .map { it.split(",").map { it.toDouble() }.toDoubleArray() }
-            .toMatrix()
+        .readText().split(Regex("\\r?\\n"))
+        .asSequence()
+        .drop(1)
+        .filter { it.isNotEmpty() }
+        .map { it.split(",").map { it.toDouble() }.toDoubleArray() }
+        .toMatrix()
 
     val n = inputData.rowNum
 
@@ -27,18 +26,21 @@ fun main() {
 
     val nn = NeuralNetwork(3, 3, 2)
 
-    nn.train(inputColors,expectedOutputs)
+    nn.train(inputColors, expectedOutputs)
 
 }
-class NeuralNetwork(val inputNodes: Int,
-                    val middleNodes: Int,
-                    val outerNodes: Int) {
 
-    var middleLayerWeights = realMatrix(inputNodes, middleNodes) { row,col -> randomDouble(-1.0..1.0) }
-    var middleLayerBiases = realMatrix(1, middleNodes)  { row,col -> randomDouble(-1.0..1.0) }
+class NeuralNetwork(
+    inputNodes: Int,
+    middleNodes: Int,
+    outerNodes: Int
+) {
 
-    var outerLayerWeights = realMatrix(middleNodes, outerNodes) { row,col -> randomDouble(-1.0..1.0) }
-    var outerLayerBiases = realMatrix(1, outerNodes)  { row,col -> randomDouble(-1.0..1.0) }
+    private var middleLayerWeights = realMatrix(inputNodes, middleNodes) { row, col -> randomDouble(-1.0..1.0) }
+    private var middleLayerBiases = realMatrix(1, middleNodes) { row, col -> randomDouble(-1.0..1.0) }
+
+    private var outerLayerWeights = realMatrix(middleNodes, outerNodes) { row, col -> randomDouble(-1.0..1.0) }
+    private var outerLayerBiases = realMatrix(1, outerNodes) { row, col -> randomDouble(-1.0..1.0) }
 
     fun evaluate(inputColors: Matrix<Double>): Matrix<Double> {
 
@@ -49,6 +51,7 @@ class NeuralNetwork(val inputNodes: Int,
 
         return outerLayerOp
     }
+
     fun train(inputColors: Matrix<Double>, actuals: Matrix<Double>) {
 
         var bestLoss = Double.MAX_VALUE
@@ -58,9 +61,10 @@ class NeuralNetwork(val inputNodes: Int,
         val outerLayerWeightCount = outerLayerWeights.let { it.rowNum * it.colNum }
         val outerLayerBiasCount = outerLayerBiases.let { it.rowNum * it.colNum }
 
-        val totalVariableCount = middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount
+        val totalVariableCount =
+            middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount
 
-        repeat(100_000) {
+        repeat(100_000) { step ->
 
             val weightedRandom = (0 until totalVariableCount).random()
 
@@ -71,15 +75,15 @@ class NeuralNetwork(val inputNodes: Int,
                 weightedRandom < middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount -> 3
                 else -> throw Exception("!")
             }
-            val randomAdjust = when(randomMatrixIndex) {
-                0 -> middleLayerWeights.templateRandomAdjust(-1.0,1.0)
-                1 -> middleLayerBiases.templateRandomAdjust(0.0,1.0)
-                2 -> outerLayerWeights.templateRandomAdjust(-1.0,1.0)
-                3 -> outerLayerBiases.templateRandomAdjust(0.0,1.0)
+            val randomAdjust = when (randomMatrixIndex) {
+                0 -> middleLayerWeights.templateRandomAdjust(-1.0, 1.0)
+                1 -> middleLayerBiases.templateRandomAdjust(0.0, 1.0)
+                2 -> outerLayerWeights.templateRandomAdjust(-1.0, 1.0)
+                3 -> outerLayerBiases.templateRandomAdjust(0.0, 1.0)
                 else -> throw Exception("!")
             }
 
-            when(randomMatrixIndex) {
+            when (randomMatrixIndex) {
                 0 -> middleLayerWeights += randomAdjust
                 1 -> middleLayerBiases += randomAdjust
                 2 -> outerLayerWeights += randomAdjust
@@ -91,10 +95,10 @@ class NeuralNetwork(val inputNodes: Int,
             val loss = (predictions - actuals).pow(2).sum()
 
             if (loss < bestLoss) {
-                println("LOSS: $bestLoss -> $loss")
+                println("[$step] LOSS: $bestLoss -> $loss")
                 bestLoss = loss
             } else {
-                when(randomMatrixIndex) {
+                when (randomMatrixIndex) {
                     0 -> middleLayerWeights -= randomAdjust
                     1 -> middleLayerBiases -= randomAdjust
                     2 -> outerLayerWeights -= randomAdjust
@@ -110,10 +114,10 @@ fun Matrix<Double>.templateRandomAdjust(min: Double, max: Double): Matrix<Double
     val randomRow = randomInt(0..rowNum)
     val randomCol = randomInt(0..colNum)
 
-    return realMatrix(rowNum, colNum) { row,col ->
+    return realMatrix(rowNum, colNum) { row, col ->
         if (row == randomRow && col == randomCol)
-            randomNormal().let { it * .1 }.let {
-                val currentValue = this@templateRandomAdjust[row,col]
+            (randomNormal() * .1).let {
+                val currentValue = this@templateRandomAdjust[row, col]
                 when {
                     currentValue + it < min -> min - currentValue
                     currentValue + it > max -> max - currentValue
@@ -125,16 +129,23 @@ fun Matrix<Double>.templateRandomAdjust(min: Double, max: Double): Matrix<Double
     }
 }
 
-fun Matrix<Double>.tanh() = realMatrix(rowNum, colNum) { row,col ->  kotlin.math.tanh(this[row,col])}
-fun Matrix<Double>.sigmoid() = realMatrix(rowNum, colNum) { row,col ->  1.0 / (1.0 + exp(- 1.0 / 1.0 + exp(-this[row,col]))) }
-fun Matrix<Double>.relu() = realMatrix(rowNum, colNum) { row,col ->  if (this[row,col] < 0.0) 0.0 else this[row,col] }
+fun Matrix<Double>.tanh() = realMatrix(rowNum, colNum) { row, col -> kotlin.math.tanh(this[row, col]) }
+fun Matrix<Double>.sigmoid() =
+    realMatrix(rowNum, colNum) { row, col -> 1.0 / (1.0 + exp(-1.0 / 1.0 + exp(-this[row, col]))) }
 
-fun Matrix<Double>.softmax() = realMatrix(rowNum, colNum) { row,col ->
-    val sumValues = columns[col].asSequence().map { exp(it) }.sum()
-    exp(this[row,col]) / sumValues
+fun Matrix<Double>.relu() = realMatrix(rowNum, colNum) { row, col -> if (this[row, col] < 0.0) 0.0 else this[row, col] }
+
+fun Matrix<Double>.softmax() = realMatrix(rowNum, colNum) { row, col ->
+    var sumValues = 0.0
+    for(i in 0 until rowNum){
+        sumValues += get(i,col)
+    }
+    //val sumValues = columns[col].asSequence().map { exp(it) }.sum()
+    exp(this[row, col]) / sumValues
 }
 
-val normal = Normal(0.0,1.0)
+val normal = Normal(0.0, 1.0)
 fun randomNormal() = normal.get()
 fun randomInt(intRange: IntRange) = ThreadLocalRandom.current().nextInt(intRange.start, intRange.endInclusive)
-fun randomDouble(doubleRange: ClosedRange<Double>) = ThreadLocalRandom.current().nextDouble(doubleRange.start, doubleRange.endInclusive)
+fun randomDouble(doubleRange: ClosedRange<Double>) =
+    ThreadLocalRandom.current().nextDouble(doubleRange.start, doubleRange.endInclusive)
