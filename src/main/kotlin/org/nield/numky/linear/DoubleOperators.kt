@@ -64,7 +64,7 @@ operator fun Matrix<Double>.minus(other: Matrix<Double>) = MatrixContext.real.pr
 operator fun Matrix<Double>.plus(other: Matrix<Double>) = MatrixContext.real.add(this,other)
 
 fun Matrix<Double>.repeatStackVertical(n: Int) = VirtualMatrix(rowNum*n, colNum) { row, col ->
-    this@repeatStackVertical[if (row == 0) 0 else row % this@repeatStackVertical.rowNum, col]
+    get(if (row == 0) 0 else row % rowNum, col)
 }
 
 inline fun Matrix<Double>.appendColumn(crossinline  mapper: (Buffer<Double>) -> Double) =

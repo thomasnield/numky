@@ -2,6 +2,7 @@ package org.nield.numky
 
 import org.nield.numky.linear.*
 import org.ojalgo.random.Normal
+import scientifik.kmath.linear.RealMatrix
 import scientifik.kmath.linear.dot
 import scientifik.kmath.structures.Matrix
 import java.net.URL
@@ -29,22 +30,27 @@ fun main() {
     val nn = NeuralNetwork(3, 3, 2)
 
     nn.train(inputColors, expectedOutputs)
-
 }
 
+
 class NeuralNetwork(
-    inputNodes: Int,
-    middleNodes: Int,
-    outerNodes: Int
+    val inputNodes: Int,
+    val middleNodes: Int,
+    val outerNodes: Int
 ) {
 
-    private var middleLayerWeights = realMatrix(inputNodes, middleNodes) { row, col -> randomDouble(-1.0..1.0) }
-    private var middleLayerBiases = realMatrix(1, middleNodes) { row, col -> randomDouble(-1.0..1.0) }
+    private class NeuralNetworkState(
+        inputNodes: Int,
+        middleNodes: Int,
+        outerNodes: Int
+    ) {
+        var middleLayerWeights: RealMatrix = realMatrix(inputNodes, middleNodes) { _, _ -> randomDouble(-1.0..1.0) }
+        var middleLayerBiases: RealMatrix = realMatrix(1, middleNodes) { _, _ -> randomDouble(-1.0..1.0) }
+        var outerLayerWeights: RealMatrix = realMatrix(middleNodes, outerNodes) { _, _ -> randomDouble(-1.0..1.0) }
+        var outerLayerBiases: RealMatrix = realMatrix(1, outerNodes) { _, _ -> randomDouble(-1.0..1.0) }
+    }
 
-    private var outerLayerWeights = realMatrix(middleNodes, outerNodes) { row, col -> randomDouble(-1.0..1.0) }
-    private var outerLayerBiases = realMatrix(1, outerNodes) { row, col -> randomDouble(-1.0..1.0) }
-
-    fun evaluate(inputColors: Matrix<Double>): Matrix<Double> {
+    private fun NeuralNetworkState.evaluate(inputColors: Matrix<Double>): Matrix<Double> {
 
         val n = inputColors.rowNum
 
@@ -58,61 +64,64 @@ class NeuralNetwork(
 
         var bestLoss = Double.MAX_VALUE
 
-        val middleLayerWeightCount = middleLayerWeights.let { it.rowNum * it.colNum }
-        val middleLayerBiasCount = middleLayerBiases.let { it.rowNum * it.colNum }
-        val outerLayerWeightCount = outerLayerWeights.let { it.rowNum * it.colNum }
-        val outerLayerBiasCount = outerLayerBiases.let { it.rowNum * it.colNum }
+        NeuralNetworkState(inputNodes, middleNodes, outerNodes).run {
 
-        val totalVariableCount =
-            middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount
+            val middleLayerWeightCount = middleLayerWeights.let { it.rowNum * it.colNum }
+            val middleLayerBiasCount = middleLayerBiases.let { it.rowNum * it.colNum }
+            val outerLayerWeightCount = outerLayerWeights.let { it.rowNum * it.colNum }
+            val outerLayerBiasCount = outerLayerBiases.let { it.rowNum * it.colNum }
 
-        val start = Instant.now()
+            val totalVariableCount =
+                middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount
 
-        repeat(100_000) { step ->
+            val start = Instant.now()
 
-            if( step != 0 && step % 100 == 0){
-                val now = Instant.now()
-                println ("$step cycles done in ${Duration.between(start,now)}")
-            }
+            repeat(100_000) { step ->
 
-            val weightedRandom = (0 until totalVariableCount).random()
+                if (step != 0 && step % 100 == 0) {
+                    val now = Instant.now()
+                    println("$step cycles done in ${Duration.between(start, now)}")
+                }
 
-            val randomMatrixIndex = when {
-                weightedRandom < middleLayerWeightCount -> 0
-                weightedRandom < middleLayerWeightCount + middleLayerBiasCount -> 1
-                weightedRandom < middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount -> 2
-                weightedRandom < middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount -> 3
-                else -> throw Exception("!")
-            }
-            val randomAdjust = when (randomMatrixIndex) {
-                0 -> middleLayerWeights.templateRandomAdjust(-1.0, 1.0)
-                1 -> middleLayerBiases.templateRandomAdjust(0.0, 1.0)
-                2 -> outerLayerWeights.templateRandomAdjust(-1.0, 1.0)
-                3 -> outerLayerBiases.templateRandomAdjust(0.0, 1.0)
-                else -> throw Exception("!")
-            }
+                val weightedRandom = (0 until totalVariableCount).random()
 
-            when (randomMatrixIndex) {
-                0 -> middleLayerWeights += randomAdjust
-                1 -> middleLayerBiases += randomAdjust
-                2 -> outerLayerWeights += randomAdjust
-                3 -> outerLayerBiases += randomAdjust
-                else -> throw Exception("!")
-            }
-
-            val predictions = evaluate(inputColors)
-            val loss = (predictions - actuals).pow(2).sum()
-
-            if (loss < bestLoss) {
-                println("[$step] LOSS: $bestLoss -> $loss")
-                bestLoss = loss
-            } else {
-                when (randomMatrixIndex) {
-                    0 -> middleLayerWeights -= randomAdjust
-                    1 -> middleLayerBiases -= randomAdjust
-                    2 -> outerLayerWeights -= randomAdjust
-                    3 -> outerLayerBiases -= randomAdjust
+                val randomMatrixIndex = when {
+                    weightedRandom < middleLayerWeightCount -> 0
+                    weightedRandom < middleLayerWeightCount + middleLayerBiasCount -> 1
+                    weightedRandom < middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount -> 2
+                    weightedRandom < middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount -> 3
                     else -> throw Exception("!")
+                }
+                val randomAdjust = when (randomMatrixIndex) {
+                    0 -> middleLayerWeights.templateRandomAdjust(-1.0, 1.0)
+                    1 -> middleLayerBiases.templateRandomAdjust(0.0, 1.0)
+                    2 -> outerLayerWeights.templateRandomAdjust(-1.0, 1.0)
+                    3 -> outerLayerBiases.templateRandomAdjust(0.0, 1.0)
+                    else -> throw Exception("!")
+                }
+
+                when (randomMatrixIndex) {
+                    0 -> middleLayerWeights += randomAdjust
+                    1 -> middleLayerBiases += randomAdjust
+                    2 -> outerLayerWeights += randomAdjust
+                    3 -> outerLayerBiases += randomAdjust
+                    else -> throw Exception("!")
+                }
+
+                val predictions = evaluate(inputColors)
+                val loss = (predictions - actuals).pow(2).sum()
+
+                if (loss < bestLoss) {
+                    println("[$step] LOSS: $bestLoss -> $loss")
+                    bestLoss = loss
+                } else {
+                    when (randomMatrixIndex) {
+                        0 -> middleLayerWeights -= randomAdjust
+                        1 -> middleLayerBiases -= randomAdjust
+                        2 -> outerLayerWeights -= randomAdjust
+                        3 -> outerLayerBiases -= randomAdjust
+                        else -> throw Exception("!")
+                    }
                 }
             }
         }
@@ -146,8 +155,8 @@ fun Matrix<Double>.relu() = realMatrix(rowNum, colNum) { row, col -> if (this[ro
 
 fun Matrix<Double>.softmax() = realMatrix(rowNum, colNum) { row, col ->
     var sumValues = 0.0
-    for(i in 0 until rowNum){
-        sumValues += exp(get(i,col))
+    for (i in 0 until rowNum) {
+        sumValues += exp(get(i, col))
     }
     //val sumValues = columns[col].asSequence().map { exp(it) }.sum()
     exp(this[row, col]) / sumValues
