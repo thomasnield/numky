@@ -138,7 +138,7 @@ fun Matrix<Double>.relu() = realMatrix(rowNum, colNum) { row, col -> if (this[ro
 fun Matrix<Double>.softmax() = realMatrix(rowNum, colNum) { row, col ->
     var sumValues = 0.0
     for(i in 0 until rowNum){
-        sumValues += get(i,col)
+        sumValues += exp(get(i,col))
     }
     //val sumValues = columns[col].asSequence().map { exp(it) }.sum()
     exp(this[row, col]) / sumValues
