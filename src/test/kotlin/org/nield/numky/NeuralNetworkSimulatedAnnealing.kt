@@ -5,6 +5,8 @@ import org.ojalgo.random.Normal
 import scientifik.kmath.linear.dot
 import scientifik.kmath.structures.Matrix
 import java.net.URL
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.exp
 
@@ -64,7 +66,14 @@ class NeuralNetwork(
         val totalVariableCount =
             middleLayerWeightCount + middleLayerBiasCount + outerLayerWeightCount + outerLayerBiasCount
 
+        val start = Instant.now()
+
         repeat(100_000) { step ->
+
+            if( step != 0 && step % 100 == 0){
+                val now = Instant.now()
+                println ("$step cycles done in ${Duration.between(start,now)}")
+            }
 
             val weightedRandom = (0 until totalVariableCount).random()
 
