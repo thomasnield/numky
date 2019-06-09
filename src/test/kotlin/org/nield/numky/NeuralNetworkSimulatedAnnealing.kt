@@ -55,7 +55,7 @@ class NeuralNetwork(
         val n = inputColors.rowNum
 
         val middleLayerOp = ((inputColors dot middleLayerWeights) + middleLayerBiases.repeatStackVertical(n)).tanh()
-        val outerLayerOp = ((middleLayerOp dot outerLayerWeights) + outerLayerBiases.repeatStackVertical(n)).softmax()
+        val outerLayerOp = ((middleLayerOp dot outerLayerWeights) + outerLayerBiases.repeatStackVertical(n)).sigmoid()
 
         return outerLayerOp
     }
