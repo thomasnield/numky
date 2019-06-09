@@ -22,7 +22,7 @@ operator fun Matrix<Double>.times(double: Double) = MatrixContext.real.produce(r
 }
 
 fun Matrix<Double>.square() =  MatrixContext.real.produce(rowNum, colNum) { row, col ->
-    this@square[row,col].let { it.pow(2) }
+    this@square[row,col].pow(2)
 }
 
 operator fun Matrix<Double>.plus(double: Double) = MatrixContext.real.produce(rowNum, colNum) { row, col ->
@@ -64,7 +64,7 @@ operator fun Matrix<Double>.minus(other: Matrix<Double>) = MatrixContext.real.pr
 operator fun Matrix<Double>.plus(other: Matrix<Double>) = MatrixContext.real.add(this,other)
 
 fun Matrix<Double>.repeatStackVertical(n: Int) = VirtualMatrix(rowNum*n, colNum) { row, col ->
-    this@repeatStackVertical[if (row == 0) 0 else row % this@repeatStackVertical.rowNum, col]
+    get(if (row == 0) 0 else row % rowNum, col)
 }
 
 inline fun Matrix<Double>.appendColumn(crossinline  mapper: (Buffer<Double>) -> Double) =
@@ -104,10 +104,10 @@ fun Matrix<Double>.averageByColumn() = MatrixContext.real.produce(1, colNum) { i
     column.asSequence().average()
 }
 
-fun Matrix<Double>.sum() = this.elements().map { (dim,value) -> value  }.sum()
-fun Matrix<Double>.min() = this.elements().map { (dim,value) -> value  }.min()
-fun Matrix<Double>.max() = this.elements().map { (dim,value) -> value  }.max()
-fun Matrix<Double>.average() = this.elements().map { (dim,value) -> value  }.average()
+fun Matrix<Double>.sum() = this.elements().map { (_,value) -> value  }.sum()
+fun Matrix<Double>.min() = this.elements().map { (_,value) -> value  }.min()
+fun Matrix<Double>.max() = this.elements().map { (_,value) -> value  }.max()
+fun Matrix<Double>.average() = this.elements().map { (_,value) -> value  }.average()
 
 
 fun Matrix<Double>.pow(n: Int) = MatrixContext.real.produce(rowNum, colNum) { i, j ->
